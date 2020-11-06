@@ -9,6 +9,9 @@ flask = "*"
 flask-jwt-extended = "*"
 flask-restful = "*"
 flask-sqlalchemy = "*"
+marshmallow = "*"
+flask-marshmallow = "*"
+marshmallow-sqlalchemy = "*"
 
 [dev-packages]
 
