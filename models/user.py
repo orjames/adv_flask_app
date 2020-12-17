@@ -1,23 +1,12 @@
-from typing import Dict, Union
-
 from db import db
-
-UserJson = Dict[str, Union[int, str]]
 
 
 class UserModel(db.Model):
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True)
-    password = db.Column(db.String(80))
-
-    def __init__(self, username: str, password: str):
-        self.username = username
-        self.password = password
-
-    def json(self) -> UserJson:
-        return {"id": self.id, "username": self.username}
+    username = db.Column(db.String(80), nullable=False, unique=True)
+    password = db.Column(db.String(80), nullable=False)
 
     @classmethod
     def find_by_username(cls, username: str) -> "UserModel":

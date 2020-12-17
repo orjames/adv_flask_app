@@ -1,54 +1,54 @@
 from typing import Dict, List
 
-from flask_restful import Resource, reqparse
+from flask import request
+from flask_restful import Resource
+from marshmallow import ValidationError
 from flask_jwt_extended import (
     jwt_required,
     fresh_jwt_required,
 )
 from models.item import ItemModel
+from schemas.item import ItemSchema
 
-BLANK_ERROR = "'{}' cannot be blank."
 ERROR_INSERTING = "An error occurred while inserting the item."
 ITEM_DELETED = "Item deleted."
 ITEM_NOT_FOUND = "Item not found."
 NAME_ALREADY_EXISTS = "An item with name '{}' already exists."
 
+item_schema = ItemSchema()
+
 
 class Item(Resource):
-    parser = reqparse.RequestParser()
-    parser.add_argument(
-        "price", type=float, required=True, help=BLANK_ERROR.format("price")
-    )
-    parser.add_argument(
-        "store_id", type=int, required=True, help=BLANK_ERROR.format("store_id")
-    )
-
     # making it a classmethod using the @ decorator, doesn't depend on the object that's calling it (aka self)
     # classmethod vs static methods, classmethods give more inheritance benefits, and access to cls
     @classmethod
     def get(cls, name: str):
         item = ItemModel.find_by_name(name)
         if item:
-            return item.json(), 200
+            return item_schema.dump(item), 200
         return {"message": ITEM_NOT_FOUND}, 404
 
     # classmethod goes above @fresh_jwt_required
     @classmethod
     @fresh_jwt_required
-    def post(cls, name: str):
+    def post(cls, name: str):  # /item/chair
         if ItemModel.find_by_name(name):
             return {"message": NAME_ALREADY_EXISTS.format(name)}, 400
 
-        data = Item.parser.parse_args()
+        item_json = request.get_json()  # price, store_id
+        item_json["name"] = name
 
-        item = ItemModel(name, **data)
+        try:
+            item = item_schema.load(item_json)
+        except ValidationError as err:
+            return err.messages, 400
 
         try:
             item.save_to_db()
         except:
             return {"message": ERROR_INSERTING}, 500
 
-        return item.json(), 201
+        return item_schema.dump(item), 201
 
     @classmethod
     @jwt_required
